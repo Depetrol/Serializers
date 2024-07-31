@@ -4,15 +4,19 @@ import pyarrow as pa
 import pyarrow.plasma as plasma
 import numpy as np
 
-class Serialized_NumPy():
+
+class Serialized_NumPy:
     def __init__(self, object_id):
         self.object_id = object_id
+
     def read(self):
         return self.object_id
 
-class Serializer():
+
+class Serializer:
     def __init__(self, location="/tmp/plasma"):
         self.session = plasma.connect(location)
+
     def serialize_np(self, data):
         if not isinstance(data, np.ndarray):
             raise Exception("serialize_np: Trying to serialize non-np with plasma")
@@ -32,6 +36,7 @@ class Serializer():
         tensor2 = pa.ipc.read_tensor(reader)
         array = tensor2.to_numpy()
         return array
+
     def serialize_one(self, obj):
         if isinstance(obj, np.ndarray):
             return self.serialize_np(obj)
@@ -39,6 +44,7 @@ class Serializer():
             for key in obj.keys():
                 obj[key] = self.serialize_one(obj[key])
         return obj
+
     def deserialize_one(self, obj):
         if isinstance(obj, Serialized_NumPy):
             return self.deserialize_np(obj)
@@ -46,7 +52,9 @@ class Serializer():
             for key in obj.keys():
                 obj[key] = self.deserialize_one(obj[key])
         return obj
-    def serialize(self, obj)->bytes:
+
+    def serialize(self, obj) -> bytes:
         return pickle.dumps(self.serialize_one(obj), protocol=5)
-    def deserialize(self, obj:bytes):
+
+    def deserialize(self, obj: bytes):
         return self.deserialize_one(pickle.loads(obj))
